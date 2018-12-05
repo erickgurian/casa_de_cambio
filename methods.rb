@@ -23,7 +23,7 @@ class Methods
     dollar = gets.to_f
     print 'Reais disponívels: '
     real = gets.to_f
-    op = Transactions.new(dollar.round(2), real.round(2), price.round(2))
+    op = Cashier.new(dollar.round(2), real.round(2), price.round(2))
     puts
     puts 'Tudo Pronto! Podemos começar!'
     op

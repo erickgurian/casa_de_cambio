@@ -1,4 +1,5 @@
 require_relative 'methods'
+require_relative 'cashier'
 require_relative 'transactions'
 require 'terminal-table'
 
