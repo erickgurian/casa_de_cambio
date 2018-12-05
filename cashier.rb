@@ -119,6 +119,17 @@ class Cashier
     puts user_table
   end
 
+  def show_historic
+    user_table = Terminal::Table.new do |t|
+      t.title = 'Historico de transações'
+      File.foreach('operations.txt') do |file|
+        f = file.split('\n')
+        t << f
+      end
+    end
+    puts user_table
+  end
+
 
   def status
     user_table =  Terminal::Table.new do |t|
@@ -134,6 +145,7 @@ class Cashier
       @operations.each do |op|
         file.puts(op)
       end
+      file.puts('\n')
     end
   end
 

@@ -6,7 +6,7 @@ require 'terminal-table'
 op = Methods.init
 opcao = Methods.menu()
 
-while (opcao != 7) do
+while (opcao != 8) do
 
   if opcao == 1
     puts 'Quantos dólares deseja comprar: '
@@ -36,6 +36,10 @@ while (opcao != 7) do
   elsif opcao == 6
     puts
     op.status
+
+  elsif opcao == 7
+    puts
+    op.show_historic
 
   else
     puts

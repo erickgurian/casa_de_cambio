@@ -9,7 +9,8 @@ class Methods
     puts '[4] Vender reais'
     puts '[5] Ver operações do dia;'
     puts '[6] Ver situação do caixa'
-    puts '[7] Salvar e Sair'
+    puts '[7] Ver histórico de transações'
+    puts '[8] Salvar e Sair'
     print 'Opção: '
     gets.to_i
   end
