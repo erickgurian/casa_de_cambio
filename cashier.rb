@@ -1,46 +1,65 @@
+require 'sqlite3'
+
 class Cashier
 
-  attr_accessor :dollar, :real, :price, :operations
+  attr_accessor :dollar, :real, :price, :date, :operator
 
-  def initialize(dollar, real, price)
+  @@db = SQLite3::Database.open "cambio.db"
+
+
+  def initialize(dollar, real, price, operator)
     @dollar = dollar
     @real = real
     @price = price
-    @operations = []
+    @date = DateTime.now.strftime('%Y-%m-%d')
+    @operator = operator
   end
 
 
   def valid? (have, want)
-    if have < want
-      false
-    else
-      true
-    end
+    return false if have < want
+    true
   end
 
-  def accepted? (answer)
-    if answer.downcase == 'sim' || answer.downcase == 'yes'
-      true
-    else
-      false
-    end
+
+  def accepted?
+    answer = gets.chomp.downcase
+    answer == 'sim' ? true : false
+  end
+
+
+  def self.check_cashier(operator)
+    dt = DateTime.now.strftime('%Y-%m-%d')
+    @@db.execute("SELECT dollar, real, price, operator FROM cashier WHERE date = '#{dt}' AND operator = '#{operator}'")
+  end
+
+
+  def save_cashier
+    @@db.execute("INSERT INTO cashier(dollar, real, price, date, operator) values (?, ?, ?, ?, ?)",
+                [self.dollar, self.real, self.price, self.date, self.operator])
+  end
+
+
+  def update_cashier
+    @@db.execute("UPDATE cashier SET dollar = #{self.dollar}, real = #{self.real}, price = #{self.price} WHERE operator = '#{self.operator}'")
   end
 
 
   def buy_dollar(qtdDollar)
-    priceDollar = (qtdDollar * @price).round(2)
-    if !valid?(@real, priceDollar)
+    priceDollar = (qtdDollar * self.price).round(2)
+    if !valid?(self.real, priceDollar)
       puts
       puts 'Você não possui dinheiro suficente para realizar essa operação!'
     else
-      puts "Tem certeza que deseja comprar $#{qtdDollar} por R$#{priceDollar}? [Sim | Não]"
-      answer = gets.chomp
-      if accepted?(answer)
-        @real -= priceDollar
-        @dollar += qtdDollar
+      print "Tem certeza que deseja comprar $#{qtdDollar} por R$#{priceDollar}? [Sim | Não]: "
+      if accepted?
+        self.real -= priceDollar
+        self.dollar += qtdDollar
         puts
         puts 'Transação efetuada com sucesso!'
-        operations << Transactions.new('Compra', 'Dólar', @price, qtdDollar)
+        transaction = Transactions.new('Compra', 'Dólar', self.price, qtdDollar)
+        @@db.execute("INSERT INTO transactions(action, coin, price, value, operator) values(?, ?, ?, ?, ?)",
+                    [transaction.action, transaction.coin, transaction.price, transaction.value], self.operator)
       else
         puts 'Operação Cancelada!'
       end
@@ -49,38 +68,41 @@ class Cashier
 
 
   def sell_dollar(qtdDollar)
-    qtdReal = (qtdDollar * @price).round(2)
-    if !valid?(@dollar, qtdDollar)
+    qtdReal = (qtdDollar * self.price).round(2)
+    if !valid?(self.dollar, qtdDollar)
       puts
       puts 'Você não possui dinheiro suficiente para realizar esa operação!'
     else
-      puts "Tem certeza que deseja vender $#{qtdDollar} por R$#{qtdReal}? [Sim | Não]"
-      answer = gets.chomp
-      if accepted?(answer)
-        @dollar -= qtdDollar
-        @real += qtdReal
+      print "Tem certeza que deseja vender $#{qtdDollar} por R$#{qtdReal}? [Sim | Não]: "
+      if accepted?
+        self.dollar -= qtdDollar
+        self.real += qtdReal
         puts
         puts 'Transação efetuada com sucesso!'
-        operations << Transactions.new('Venda', 'Dólar', @price, qtdDollar)
+        transaction = Transactions.new('Venda', 'Dólar', self.price, qtdDollar)
+        @@db.execute("INSERT INTO transactions(action, coin, price, value, operator) values(?, ?, ?, ?, ?)",
+                    [transaction.action, transaction.coin, transaction.price, transaction.value], self.operator)
       else
         puts 'Operação Cancelada!'
       end
     end
   end
 
+
   def buy_real(qtdReal)
-    qtdDollar = (qtdReal / @price).round(2)
-    if !valid?(@dollar, qtdDollar)
+    qtdDollar = (qtdReal / self.price).round(2)
+    if !valid?(self.dollar, qtdDollar)
       puts
       puts 'Você não possui dinheiro suficiente para realizar essa operação!'
     else
-      puts "Tem certeza que deseja comprar R$ #{qtdReal} por $ #{qtdDollar}? [Sim | Não]"
-      answer = gets.chomp
-      if accepted?(answer)
-        @dollar -= qtdDollar
-        @real += qtdReal
+      print "Tem certeza que deseja comprar R$ #{qtdReal} por $ #{qtdDollar}? [Sim | Não]: "
+      if accepted?
+        self.dollar -= qtdDollar
+        self.real += qtdReal
         puts 'Transação efetuada com sucesso!'
-        operations << Transactions.new('Compra', 'Real', @price, qtdDollar)
+        transaction = Transactions.new('Compra', 'Real', self.price, qtdDollar)
+        @@db.execute("INSERT INTO transactions(action, coin, price, value, operator) values(?, ?, ?, ?, ?)",
+                    [transaction.action, transaction.coin, transaction.price, transaction.value], self.operator)
       else
         puts 'Operação Cancelada!'
       end
@@ -89,19 +111,20 @@ class Cashier
 
 
   def sell_real(qtdReal)
-    qtdDollar = (qtdReal / @price).round(2)
-    if !valid?(@real, qtdReal)
+    qtdDollar = (qtdReal / self.price).round(2)
+    if !valid?(self.real, qtdReal)
       puts
       puts 'Você não possui dinheiro suficiente para realizar essa operação!'
     else
-      puts "Tem certeza que deseja vender R$ #{qtdReal} por $ #{qtdDollar}? [Sim | Não]"
-      answer = gets.chomp
-      if accepted? (answer)
-        @dollar += qtdDollar
-        @real -= qtdReal
+      print "Tem certeza que deseja vender R$ #{qtdReal} por $ #{qtdDollar}? [Sim | Não]: "
+      if accepted?
+        self.dollar += qtdDollar
+        self.real -= qtdReal
         puts
         puts 'Transação efetuada com sucesso!'
-        operations << Transactions.new('Venda', 'Real', @price, qtdDollar)
+        transaction = Transactions.new('Venda', 'Real', self.price, qtdDollar)
+        @@db.execute("INSERT INTO transactions(action, coin, price, value, operator) values(?, ?, ?, ?, ?)",
+                    [transaction.action, transaction.coin, transaction.price, transaction.value], self.operator)
       else
         puts 'Operação Cancelada!'
       end
@@ -110,43 +133,28 @@ class Cashier
 
 
   def show_operations
-    user_table = Terminal::Table.new do |t|
-      t.headings = 'Id', 'Tipo Operação', 'Moeda', 'Cotação', 'Valor'
-      @operations.each do |op|
-        t << op.to_s.split(" | ")
+    transactions = @@db.execute("SELECT * FROM transactions WHERE operator = '#{self.operator}'")
+    table = Terminal::Table.new do |t|
+      t.headings = 'Id', 'Tipo Operação', 'Moeda', 'Cotação', 'Valor', 'Operador'
+      transactions.each do |ts|
+        t << ts
       end
     end
-    puts user_table
-  end
-
-  def show_historic
-    user_table = Terminal::Table.new do |t|
-      t.title = 'Historico de transações'
-      File.foreach('operations.txt') do |file|
-        f = file.split('\n')
-        t << f
-      end
-    end
-    puts user_table
+    puts table
   end
 
 
   def status
-    user_table =  Terminal::Table.new do |t|
-      t.headings = 'Cotação Atual', 'Saldo Dólares', 'Saldo Reais'
-      t << ["$ 1,00 = #{@price}",  "$ #{@dollar}", "R$ #{@real}"]
+    table =  Terminal::Table.new do |t|
+      t.headings = 'Data', 'Operador', 'Cotação Atual', 'Saldo Dólares', 'Saldo Reais'
+      t << ["#{self.date}", "#{self.operator}", "$ 1,00 = #{self.price}",  "$ #{self.dollar}", "R$ #{self.real}"]
     end
-    puts user_table
+    puts table
   end
 
-  def save
-    File.open('operations.txt', 'a+') do |file|
-      file.puts(Time.now)
-      @operations.each do |op|
-        file.puts(op)
-      end
-      file.puts('\n')
-    end
-  end
 
+  def exit_cashier
+    @@db.close
+    exit 0
+  end
 end

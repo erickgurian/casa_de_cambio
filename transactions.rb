@@ -1,7 +1,16 @@
+require 'sqlite3'
+
 class Transactions
   attr_accessor :id, :action, :coin, :price, :value
 
-  @@last_id = 0
+  @@db = SQLite3::Database.open "cambio.db"
+  @@id_db = @@db.execute("SELECT MAX(id) FROM transactions")
+
+  if !@@id_db.any?
+    @@last_id = @@id_db[0].to_i
+  else
+    @@last_id = 0
+  end
 
   def initialize(action, coin, price, value)
     @id = @@last_id + 1
@@ -9,7 +18,6 @@ class Transactions
     @coin = coin
     @price = price
     @value = value
-    @@last_id = @id
   end
 
   def to_s
