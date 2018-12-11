@@ -142,6 +142,7 @@ class Application
         when 7
           clear
           op.update_cashier
+
           op.exit_cashier
         else
           puts 'Opção Inválida!'
