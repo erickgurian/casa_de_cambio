@@ -27,10 +27,14 @@ class Cashier
     answer == 'sim' ? true : false
   end
 
-
   def self.check_cashier(operator)
+    @@db.execute("SELECT dollar, real, price, operator FROM cashier WHERE operator = '#{operator}'")
+  end
+
+
+  def self.check_date(operator)
     dt = DateTime.now.strftime('%Y-%m-%d')
-    @@db.execute("SELECT dollar, real, price, operator FROM cashier WHERE date = '#{dt}' AND operator = '#{operator}'")
+    @@db.execute("SELECT dollar, real, price, operator FROM cashier WHERE operator = '#{operator}' AND date = #{dt}")
   end
 
 
@@ -39,9 +43,8 @@ class Cashier
                 [self.dollar, self.real, self.price, self.date, self.operator])
   end
 
-
   def update_cashier
-    @@db.execute("UPDATE cashier SET dollar = #{self.dollar}, real = #{self.real}, price = #{self.price} WHERE operator = '#{self.operator}'")
+    @@db.execute("UPDATE cashier SET dollar = #{self.dollar}, real = #{self.real}, price = #{self.price}, date = #{self.date} WHERE operator = '#{self.operator}'")
   end
 
 
@@ -133,9 +136,11 @@ class Cashier
 
 
   def show_operations
-    transactions = @@db.execute("SELECT * FROM transactions WHERE operator = '#{self.operator}'")
+    transactions = @@db.execute("SELECT id, action, coin, transactions.price, value, transactions.operator, date
+                                FROM transactions JOIN cashier ON transactions.operator = cashier.operator
+                                WHERE transactions.operator = '#{self.operator}' AND cashier.date = #{self.date}")
     table = Terminal::Table.new do |t|
-      t.headings = 'Id', 'Tipo Operação', 'Moeda', 'Cotação', 'Valor', 'Operador'
+      t.headings = 'Id', 'Tipo Operação', 'Moeda', 'Cotação', 'Valor', 'Operador', 'Data'
       transactions.each do |ts|
         t << ts
       end

@@ -7,19 +7,44 @@ class Application
   def init
     print 'Nome do Operador: '
     operator = gets.chomp
-    last = Cashier.check_cashier(operator)
+    last_operator = Cashier.check_cashier(operator)
 
-    if (!last.empty?)
-      cashier = Cashier.new(last[0][0], last[0][1], last[0][2], last[0][3])
-      puts "Valores encontrados para #{operator} na data atual:"
-      cashier.status
-      puts
-      print 'Deseja atualizar os valores? [Sim | Não]:'
-      resposta = gets.chomp
+    #Verifica se o operador atual já existe no bd
+    if (!last_operator.empty?)
+      puts 'Operador Encontrado! Buscando a data atual...'
+      last_date = Cashier.check_date(operator)
+      #Caso encontrado, checa se há dados para a data atual
+      #Se houver, carrega o caixa com os dados e pergunta se deseja atualizá-los
+      if(!last_date.empty?)
+        cashier = Cashier.new(last_date[0][0], last_date[0][1], last_date[0][2], last_date[0][3])
+        puts "Valores encontrados para #{operator} na data atual:"
+        cashier.status
+        puts
+        print 'Deseja atualizar os valores? [Sim | Não]:'
+        resposta = gets.chomp
 
-      case(resposta)
+        case(resposta)
 
-      when 'sim'
+        when 'sim'
+          puts 'Cotação atual do dólar:'
+          print '$1,00 = R$ '
+          cashier.price = gets.to_f
+          print 'Dolares disponíveis: $ '
+          cashier.dollar = gets.to_f
+          print 'Reais disponívels: R$ '
+          cashier.real = gets.to_f
+          puts
+          puts 'Tudo Pronto! Podemos começar!'
+          cashier.update_cashier
+        when 'não'
+          puts 'Valores Mantidos!'
+        else
+          puts 'Opção Inválida! Os valores serão mantidos!'
+        end
+      #Caso encontre o caixa mas não a data, atualiza os valores para essa nova data
+      else
+        puts 'Nenhum valor para esta data! Atualize agora!'
+        cashier = Cashier.new(last_operator[0][0], last_operator[0][1], last_operator[0][2], last_operator[0][3])
         puts 'Cotação atual do dólar:'
         print '$1,00 = R$ '
         cashier.price = gets.to_f
@@ -29,12 +54,10 @@ class Application
         cashier.real = gets.to_f
         puts
         puts 'Tudo Pronto! Podemos começar!'
+        cashier.date = DateTime.now.strftime('%Y-%m-%d')
         cashier.update_cashier
-      when 'não'
-        puts 'Valores Mantidos!'
-      else
-        puts 'Opção Inválida! Os valores serão mantidos!'
       end
+    #Por fim, se não houver operador cadastrado, cria um novo
     else
       puts 'Nenhum caixa encontrado'
       puts 'Inicializando...'
@@ -52,6 +75,7 @@ class Application
     end
     cashier
   end
+
 
   def menu
     puts
